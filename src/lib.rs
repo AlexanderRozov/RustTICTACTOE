@@ -18,6 +18,83 @@
 //! wasm-pack build --target web
 //! ```
 
+/// Поддерживаемые языки
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum Language {
+    /// Русский язык
+    Russian,
+    /// Английский язык
+    English,
+}
+
+/// Структура для локализации
+#[derive(Clone)]
+pub struct Localization {
+    /// Текущий язык
+    pub language: Language,
+}
+
+impl Localization {
+    /// Создает новую локализацию с указанным языком
+    pub fn new(language: Language) -> Self {
+        Self { language }
+    }
+
+    /// Возвращает локализованный текст по ключу
+    pub fn get_text(&self, key: &str) -> &'static str {
+        match self.language {
+            Language::Russian => match key {
+                "game_title" => "Крестики-нолики",
+                "current_player_turn" => "Ход игрока: {}",
+                "winner" => "Победитель: {}!",
+                "draw" => "Ничья!",
+                "new_game" => "Новая игра",
+                "exit" => "Выход",
+                "loading" => "Загрузка игры...",
+                "game_loaded" => "Игра загружена!",
+                "loading_error" => "Ошибка загрузки игры: {}",
+                "performance" => "Производительность",
+                "performance_desc" => "Нативная скорость Rust в браузере",
+                "design" => "Дизайн",
+                "design_desc" => "Современный и красивый интерфейс",
+                "compatibility" => "Совместимость",
+                "compatibility_desc" => "Работает на всех устройствах",
+                "download_source" => "Скачать исходный код",
+                "play_again" => "Играть снова",
+                "created_with" => "Создано с ❤️ на Rust + WebAssembly",
+                "language_switch" => "Язык",
+                "russian" => "Русский",
+                "english" => "English",
+                _ => "Unknown",
+            },
+            Language::English => match key {
+                "game_title" => "Tic-Tac-Toe",
+                "current_player_turn" => "Player's turn: {}",
+                "winner" => "Winner: {}!",
+                "draw" => "Draw!",
+                "new_game" => "New Game",
+                "exit" => "Exit",
+                "loading" => "Loading game...",
+                "game_loaded" => "Game loaded!",
+                "loading_error" => "Loading error: {}",
+                "performance" => "Performance",
+                "performance_desc" => "Native Rust speed in browser",
+                "design" => "Design",
+                "design_desc" => "Modern and beautiful interface",
+                "compatibility" => "Compatibility",
+                "compatibility_desc" => "Works on all devices",
+                "download_source" => "Download source code",
+                "play_again" => "Play again",
+                "created_with" => "Created with ❤️ using Rust + WebAssembly",
+                "language_switch" => "Language",
+                "russian" => "Русский",
+                "english" => "English",
+                _ => "Unknown",
+            },
+        }
+    }
+}
+
 /// Игрок в игре "Крестики-нолики"
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Player {

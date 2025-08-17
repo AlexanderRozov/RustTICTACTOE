@@ -19,6 +19,7 @@
 
 use eframe::egui;
 use crate::TicTacToe;
+use rust_tic_tac_toe::{Localization, Language};
 
 /// Основная структура графического интерфейса игры
 /// 
@@ -31,6 +32,8 @@ pub struct TicTacToeGUI {
     cell_size: f32,
     /// Цветовая схема интерфейса
     colors: GameColors,
+    /// Локализация
+    localization: Localization,
 }
 
 /// Цветовая схема для графического интерфейса
@@ -85,6 +88,7 @@ impl TicTacToeGUI {
             game: TicTacToe::new(),
             cell_size: 80.0,
             colors: GameColors::default(),
+            localization: Localization::new(Language::English), // По умолчанию английский
         }
     }
 
@@ -272,19 +276,21 @@ impl TicTacToeGUI {
             // Игра закончена - показываем результат
             match self.game.get_winner() {
                 Some(player) => {
-                    ui.heading(egui::RichText::new(format!("Победитель: {}!", player.symbol()))
+                    let text = self.localization.get_text("winner").replace("{}", player.symbol());
+                    ui.heading(egui::RichText::new(text)
                         .color(self.colors.highlight)
                         .size(24.0));
                 }
                 None => {
-                    ui.heading(egui::RichText::new("Ничья!")
+                    ui.heading(egui::RichText::new(self.localization.get_text("draw"))
                         .color(self.colors.highlight)
                         .size(24.0));
                 }
             }
         } else {
             // Игра продолжается - показываем текущего игрока
-            ui.heading(egui::RichText::new(format!("Ход игрока: {}", self.game.current_player_symbol()))
+            let text = self.localization.get_text("current_player_turn").replace("{}", self.game.current_player_symbol());
+            ui.heading(egui::RichText::new(text)
                 .color(self.colors.text)
                 .size(20.0));
         }
@@ -298,8 +304,31 @@ impl TicTacToeGUI {
     fn draw_controls(&mut self, ui: &mut egui::Ui) {
         ui.add_space(20.0);
         
+        // Переключатель языка
+        ui.horizontal(|ui| {
+            ui.label(egui::RichText::new(self.localization.get_text("language_switch"))
+                .color(self.colors.text)
+                .size(16.0));
+            
+            if ui.button(egui::RichText::new(self.localization.get_text("russian"))
+                .color(if self.localization.language == Language::Russian { self.colors.highlight } else { self.colors.text })
+                .size(14.0))
+                .clicked() {
+                self.localization.language = Language::Russian;
+            }
+            
+            if ui.button(egui::RichText::new(self.localization.get_text("english"))
+                .color(if self.localization.language == Language::English { self.colors.highlight } else { self.colors.text })
+                .size(14.0))
+                .clicked() {
+                self.localization.language = Language::English;
+            }
+        });
+        
+        ui.add_space(10.0);
+        
         // Кнопка "Новая игра"
-        if ui.button(egui::RichText::new("Новая игра")
+        if ui.button(egui::RichText::new(self.localization.get_text("new_game"))
             .color(self.colors.text)
             .size(16.0))
             .clicked() {
@@ -307,7 +336,7 @@ impl TicTacToeGUI {
         }
         
         // Кнопка "Выход"
-        if ui.button(egui::RichText::new("Выход")
+        if ui.button(egui::RichText::new(self.localization.get_text("exit"))
             .color(self.colors.text)
             .size(16.0))
             .clicked() {
@@ -361,6 +390,7 @@ impl Clone for TicTacToeGUI {
             game: self.game.clone(),
             cell_size: self.cell_size,
             colors: self.colors.clone(),
+            localization: self.localization.clone(),
         }
     }
 }

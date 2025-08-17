@@ -2,6 +2,12 @@
 name = "rust_tic_tac_toe"
 version = "0.1.0"
 edition = "2021"
+description = "Классическая игра 'Крестики-нолики' на Rust + WebAssembly"
+authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
+repository = "https://github.com/yourusername/rust-tic-tac-toe"
+keywords = ["game", "tic-tac-toe", "rust", "wasm", "webassembly", "egui"]
+categories = ["games", "web-programming"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
