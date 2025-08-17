@@ -318,7 +318,7 @@ impl Checkers {
         match checker.checker_type {
             CheckerType::Regular => {
                 if is_capture {
-                    // Взятие: ход на 2 клетки по диагонали
+                    // Взятие: ход на 2 клетки по диагонали ТОЛЬКО ВПЕРЕД
                     let direction = checker.player.direction();
                     if row_diff != direction * 2 || col_diff.abs() != 2 {
                         return false;
@@ -332,7 +332,7 @@ impl Checkers {
                 }
             }
             CheckerType::King => {
-                // Дамки могут ходить на любое расстояние по диагонали
+                // Дамки могут ходить на любое расстояние по диагонали в любом направлении
                 if row_diff.abs() < 1 || col_diff.abs() < 1 {
                     return false;
                 }
@@ -541,7 +541,7 @@ impl Checkers {
     }
     
     /// Получает все возможные взятия для указанной шашки
-    fn get_possible_captures(&self, row: usize, col: usize) -> Vec<CheckersMove> {
+    pub fn get_possible_captures(&self, row: usize, col: usize) -> Vec<CheckersMove> {
         let mut captures = Vec::new();
         
         if let Some(checker) = self.board[row][col] {
@@ -550,8 +550,8 @@ impl Checkers {
             }
             
             let directions = match checker.checker_type {
-                CheckerType::Regular => vec![checker.player.direction()],
-                CheckerType::King => vec![-1, 1],
+                CheckerType::Regular => vec![checker.player.direction()], // Только вперед для обычных шашек
+                CheckerType::King => vec![-1, 1], // В любом направлении для дамок
             };
             
             for &row_dir in &directions {
@@ -567,19 +567,43 @@ impl Checkers {
                     // Проверяем, есть ли шашка противника для взятия
                     if let Some(jump_checker) = self.board[jump_row as usize][jump_col as usize] {
                         if jump_checker.player != checker.player {
-                            // Проверяем, что за шашкой противника есть пустая клетка
-                            let land_row = jump_row + row_dir;
-                            let land_col = jump_col + col_dir;
-                            
-                            if Self::is_valid_position(land_row as usize, land_col as usize) &&
-                               Self::is_black_cell(land_row as usize, land_col as usize) &&
-                               self.board[land_row as usize][land_col as usize].is_none() {
+                            // Для дамок проверяем все возможные позиции приземления на диагонали
+                            if checker.is_king() {
+                                // Дамки могут приземлиться на любое свободное поле за шашкой противника
+                                let mut land_row = jump_row + row_dir;
+                                let mut land_col = jump_col + col_dir;
                                 
-                                captures.push(CheckersMove::with_captures(
-                                    (row, col),
-                                    (land_row as usize, land_col as usize),
-                                    vec![(jump_row as usize, jump_col as usize)]
-                                ));
+                                while Self::is_valid_position(land_row as usize, land_col as usize) &&
+                                       Self::is_black_cell(land_row as usize, land_col as usize) {
+                                    
+                                    if self.board[land_row as usize][land_col as usize].is_none() {
+                                        captures.push(CheckersMove::with_captures(
+                                            (row, col),
+                                            (land_row as usize, land_col as usize),
+                                            vec![(jump_row as usize, jump_col as usize)]
+                                        ));
+                                    } else {
+                                        break; // Встретили препятствие
+                                    }
+                                    
+                                    land_row += row_dir;
+                                    land_col += col_dir;
+                                }
+                            } else {
+                                // Обычные шашки могут приземлиться только на следующую клетку
+                                let land_row = jump_row + row_dir;
+                                let land_col = jump_col + col_dir;
+                                
+                                if Self::is_valid_position(land_row as usize, land_col as usize) &&
+                                   Self::is_black_cell(land_row as usize, land_col as usize) &&
+                                   self.board[land_row as usize][land_col as usize].is_none() {
+                                    
+                                    captures.push(CheckersMove::with_captures(
+                                        (row, col),
+                                        (land_row as usize, land_col as usize),
+                                        vec![(jump_row as usize, jump_col as usize)]
+                                    ));
+                                }
                             }
                         }
                     }
@@ -631,7 +655,7 @@ impl Checkers {
     }
 
     /// Проверяет, является ли ход взятием
-    fn is_capture_move(&self, from_row: usize, from_col: usize, to_row: usize, to_col: usize) -> bool {
+    pub fn is_capture_move(&self, from_row: usize, from_col: usize, to_row: usize, to_col: usize) -> bool {
         let row_diff = to_row as i32 - from_row as i32;
         let col_diff = to_col as i32 - from_col as i32;
         

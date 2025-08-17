@@ -54,6 +54,10 @@ struct CheckersWebApp {
     localization: Localization,
     selected_checker: Option<(usize, usize)>,
     possible_moves: Vec<(usize, usize)>,
+    /// Сообщение об ошибке для отображения
+    error_message: Option<String>,
+    /// Флаг, указывающий, что есть обязательные взятия
+    has_forced_captures: bool,
 }
 
 struct WebCheckersColors {
@@ -63,6 +67,8 @@ struct WebCheckersColors {
     black_checker: egui::Color32,
     highlight: egui::Color32,
     possible_move: egui::Color32,
+    /// Цвет обязательных взятий
+    forced_capture: egui::Color32,
     selected: egui::Color32,
     text: egui::Color32,
 }
@@ -76,6 +82,7 @@ impl Default for WebCheckersColors {
             black_checker: egui::Color32::from_rgb(50, 50, 50),    // Темно-серый
             highlight: egui::Color32::from_rgb(255, 184, 108),     // Оранжевый
             possible_move: egui::Color32::from_rgb(144, 238, 144), // Светло-зеленый
+            forced_capture: egui::Color32::from_rgb(255, 100, 100), // Красный для обязательных взятий
             selected: egui::Color32::from_rgb(255, 215, 0),        // Золотой
             text: egui::Color32::from_rgb(0, 0, 0),               // Черный
         }
@@ -84,13 +91,18 @@ impl Default for WebCheckersColors {
 
 impl CheckersWebApp {
     fn new() -> Self {
+        let game = Checkers::new();
+        let has_forced_captures = game.has_forced_captures();
+        
         Self {
-            game: Checkers::new(),
+            game,
             cell_size: 60.0,
             colors: WebCheckersColors::default(),
             localization: Localization::new(Language::English),
             selected_checker: None,
             possible_moves: Vec::new(),
+            error_message: None,
+            has_forced_captures,
         }
     }
 
@@ -212,7 +224,15 @@ impl CheckersWebApp {
             );
             
             let radius = self.cell_size * 0.2;
-            painter.circle_filled(center, radius, self.colors.possible_move);
+            
+            // Выбираем цвет в зависимости от типа хода
+            let move_color = if self.has_forced_captures {
+                self.colors.forced_capture // Красный для обязательных взятий
+            } else {
+                self.colors.possible_move  // Зеленый для обычных ходов
+            };
+            
+            painter.circle_filled(center, radius, move_color);
             painter.circle_stroke(center, radius, egui::Stroke::new(2.0, self.colors.text));
         }
     }
@@ -238,12 +258,20 @@ impl CheckersWebApp {
             return;
         }
         
+        // Очищаем предыдущее сообщение об ошибке
+        self.error_message = None;
+        
         let board = self.game.get_board();
         
         // Клик по шашке текущего игрока
         if let Some(checker) = board[row][col] {
             if checker.player == self.game.current_player {
                 self.selected_checker = Some((row, col));
+                
+                // Обновляем флаг обязательных взятий
+                self.has_forced_captures = self.game.has_forced_captures();
+                
+                // Получаем возможные ходы
                 self.possible_moves = self.game.get_possible_moves(row, col)
                     .into_iter()
                     .map(|mv| mv.to)
@@ -255,9 +283,61 @@ impl CheckersWebApp {
         // Клик по пустой клетке
         if let Some((from_row, from_col)) = self.selected_checker {
             if board[row][col].is_none() {
+                // Проверяем, есть ли обязательные взятия
+                let has_captures = self.game.has_forced_captures();
+                let is_capture_move = self.game.is_capture_move(from_row, from_col, row, col);
+                
+                // Если есть обязательные взятия, но игрок пытается сделать обычный ход
+                if has_captures && !is_capture_move {
+                    self.error_message = Some(
+                        if self.localization.language == Language::Russian {
+                            "Обязательно брать шашки противника!".to_string()
+                        } else {
+                            "You must capture opponent's checkers!".to_string()
+                        }
+                    );
+                    return;
+                }
+                
                 if self.game.make_move(from_row, from_col, row, col) {
                     self.selected_checker = None;
                     self.possible_moves.clear();
+                    
+                    // Обновляем флаг обязательных взятий
+                    self.has_forced_captures = self.game.has_forced_captures();
+                    
+                    // Если после хода все еще есть обязательные взятия, выбираем новую шашку
+                    if self.has_forced_captures {
+                        // Автоматически выбираем шашку, которая может продолжить взятие
+                        for (r, row_data) in self.game.get_board().iter().enumerate() {
+                            for (c, cell) in row_data.iter().enumerate() {
+                                if let Some(checker) = cell {
+                                    if checker.player == self.game.current_player {
+                                        if !self.game.get_possible_captures(r, c).is_empty() {
+                                            self.selected_checker = Some((r, c));
+                                            self.possible_moves = self.game.get_possible_captures(r, c)
+                                                .into_iter()
+                                                .map(|mv| mv.to)
+                                                .collect();
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            if self.selected_checker.is_some() {
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    // Ход не удался
+                    self.error_message = Some(
+                        if self.localization.language == Language::Russian {
+                            "Некорректный ход!".to_string()
+                        } else {
+                            "Invalid move!".to_string()
+                        }
+                    );
                 }
             }
         }
@@ -265,6 +345,14 @@ impl CheckersWebApp {
 
     fn draw_status(&self, ui: &mut egui::Ui) {
         ui.add_space(20.0);
+        
+        // Отображаем сообщение об ошибке, если есть
+        if let Some(error_msg) = &self.error_message {
+            ui.heading(egui::RichText::new(error_msg)
+                .color(egui::Color32::from_rgb(255, 100, 100))
+                .size(18.0));
+            ui.add_space(10.0);
+        }
         
         if self.game.is_game_over() {
             match self.game.get_winner() {
@@ -288,8 +376,19 @@ impl CheckersWebApp {
                 CheckersPlayer::White => self.localization.get_text("white_turn"),
                 CheckersPlayer::Black => self.localization.get_text("black_turn"),
             };
-            ui.heading(egui::RichText::new(text)
-                .color(self.colors.text)
+            
+            let status_text = if self.has_forced_captures {
+                if self.localization.language == Language::Russian {
+                    format!("{} (обязательно брать!)", text)
+                } else {
+                    format!("{} (must capture!)", text)
+                }
+            } else {
+                text.to_string()
+            };
+            
+            ui.heading(egui::RichText::new(status_text)
+                .color(if self.has_forced_captures { self.colors.forced_capture } else { self.colors.text })
                 .size(20.0));
         }
     }
@@ -327,6 +426,8 @@ impl CheckersWebApp {
             self.game.reset();
             self.selected_checker = None;
             self.possible_moves.clear();
+            self.error_message = None;
+            self.has_forced_captures = false;
         }
     }
 }
