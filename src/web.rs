@@ -81,7 +81,7 @@ impl TicTacToeWebApp {
             game: TicTacToe::new(),
             cell_size: 80.0,
             colors: WebGameColors::default(),
-            localization: Localization::new(Language::English), // По умолчанию русский
+            localization: Localization::new(Language::English), // По умолчанию английский
         }
     }
 
