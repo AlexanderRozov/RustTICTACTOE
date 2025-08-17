@@ -31,7 +31,7 @@ impl TicTacToeWeb {
         };
 
         self.runner.start(
-            "Крестики-нолики",
+            "game-canvas",
             options,
             Box::new(|_cc| Box::new(TicTacToeWebApp::new())),
         ).await?;

@@ -10,14 +10,20 @@ if not exist "pkg\rust_tic_tac_toe.js" (
     exit /b 1
 )
 
-REM Открываем игру в браузере по умолчанию
+REM Запускаем локальный сервер и открываем игру
+echo Запускаю локальный сервер на порту 9001...
+start /min python -m http.server 9001
+timeout /t 2 /nobreak >nul
+
+REM Открываем игру в браузере через HTTP
 echo Открываю игру в браузере...
-start "" "index.html"
+start "" "http://localhost:9001"
 
 echo.
 echo Игра открыта в браузере!
-echo Если игра не работает, попробуйте:
-echo 1. Запустить локальный сервер: python -m http.server 8080
-echo 2. Открыть http://localhost:8080
+echo Игра запущена через локальный сервер на http://localhost:9001
+echo Если игра не работает, проверьте:
+echo 1. Что Python установлен и доступен в PATH
+echo 2. Что порт 9000 не занят другими приложениями
 echo.
 pause
