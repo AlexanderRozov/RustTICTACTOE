@@ -119,24 +119,51 @@ impl CheckersMove {
     }
 }
 
-/// Основная структура игры "Шашки"
-/// 
-/// Игровое поле представляет собой доску 8x8, где:
-/// - Белые шашки начинают сверху
-/// - Черные шашки начинают снизу
-/// - Шашки могут ходить только по черным клеткам
-/// - Обычные шашки ходят только вперед
-/// - Дамки могут ходить в любом направлении
+/// Структура для логгирования хода
+#[derive(Debug, Clone)]
+pub struct MoveLog {
+    /// Номер хода
+    pub move_number: usize,
+    /// Игрок, сделавший ход
+    pub player: CheckersPlayer,
+    /// Откуда
+    pub from: (usize, usize),
+    /// Куда
+    pub to: (usize, usize),
+    /// Тип хода
+    pub move_type: MoveType,
+    /// Захваченные шашки
+    pub captured: Vec<(usize, usize)>,
+    /// Позиция доски после хода
+    pub board_after: String,
+}
+
+/// Тип хода
+#[derive(Debug, Clone)]
+pub enum MoveType {
+    /// Обычный ход
+    Regular,
+    /// Взятие
+    Capture,
+    /// Превращение в дамку
+    Promotion,
+    /// Взятие с превращением
+    CaptureWithPromotion,
+}
+
+/// Основная структура игры в шашки
 #[derive(Clone)]
 pub struct Checkers {
-    /// Игровое поле: массив 8x8, где None = пустая клетка
+    /// Игровое поле 8x8
     board: [[Option<Checker>; 8]; 8],
-    /// Текущий игрок, который должен сделать ход
+    /// Текущий игрок
     pub current_player: CheckersPlayer,
-    /// Флаг, указывающий, что игра закончена
+    /// Флаг окончания игры
     game_over: bool,
-    /// Последний сделанный ход (для отображения)
+    /// Последний сделанный ход
     last_move: Option<CheckersMove>,
+    /// История ходов
+    move_history: Vec<MoveLog>,
 }
 
 impl Checkers {
@@ -172,12 +199,14 @@ impl Checkers {
             current_player: CheckersPlayer::White,
             game_over: false,
             last_move: None,
+            move_history: Vec::new(),
         }
     }
     
     /// Сбрасывает игру в начальное состояние
     pub fn reset(&mut self) {
         *self = Self::new();
+        println!("Игра сброшена в начальное состояние");
     }
     
     /// Возвращает символ текущего игрока
@@ -253,17 +282,22 @@ impl Checkers {
         self.board[to_row][to_col] = Some(checker);
         self.board[from_row][from_col] = None;
         
+        // Определяем тип хода для логгирования
+        let mut move_type = if is_capture_move { MoveType::Capture } else { MoveType::Regular };
+        let mut captured = Vec::new();
+        
         // Если это взятие, удаляем захваченную шашку
         if is_capture_move {
             let captured_row = (from_row + to_row) / 2;
             let captured_col = (from_col + to_col) / 2;
             self.board[captured_row][captured_col] = None;
+            captured.push((captured_row, captured_col));
             
             // Сохраняем последний ход с информацией о взятии
             self.last_move = Some(CheckersMove::with_captures(
                 (from_row, from_col),
                 (to_row, to_col),
-                vec![(captured_row, captured_col)]
+                captured.clone()
             ));
         } else {
             // Сохраняем последний ход
@@ -275,8 +309,13 @@ impl Checkers {
         if should_promote {
             if let Some(checker) = &mut self.board[to_row][to_col] {
                 checker.promote_to_king();
+                // Обновляем тип хода
+                move_type = if is_capture_move { MoveType::CaptureWithPromotion } else { MoveType::Promotion };
             }
         }
+        
+        // Логгируем ход
+        self.log_move((from_row, from_col), (to_row, to_col), move_type, captured);
         
         // Проверяем, есть ли победитель
         if self.check_winner() {
@@ -514,6 +553,11 @@ impl Checkers {
                     let mut new_row = row as i32 + row_dir;
                     let mut new_col = col as i32 + col_dir;
                     
+                    // Проверяем, что начальная позиция для движения валидна
+                    if !Self::is_valid_position(new_row as usize, new_col as usize) {
+                        continue;
+                    }
+                    
                     while Self::is_valid_position(new_row as usize, new_col as usize) {
                         if !Self::is_black_cell(new_row as usize, new_col as usize) {
                             break;
@@ -661,6 +705,136 @@ impl Checkers {
         
         // Взятие - это ход на расстояние 2 по диагонали
         row_diff.abs() == 2 && col_diff.abs() == 2
+    }
+    
+    /// Возвращает историю ходов
+    pub fn get_move_history(&self) -> &[MoveLog] {
+        &self.move_history
+    }
+    
+    /// Возвращает последний ход из истории
+    pub fn get_last_move_log(&self) -> Option<&MoveLog> {
+        self.move_history.last()
+    }
+    
+    /// Логгирует ход
+    fn log_move(&mut self, from: (usize, usize), to: (usize, usize), 
+                move_type: MoveType, captured: Vec<(usize, usize)>) {
+        let move_number = self.move_history.len() + 1;
+        let player = self.current_player;
+        
+        // Создаем строковое представление доски
+        let board_after = self.board_to_string();
+        
+        let move_log = MoveLog {
+            move_number,
+            player,
+            from,
+            to,
+            move_type: move_type.clone(),
+            captured: captured.clone(),
+            board_after,
+        };
+        
+        self.move_history.push(move_log);
+        
+        // Выводим информацию о ходе в консоль
+        println!("=== ХОД {} ===", move_number);
+        println!("Игрок: {}", match player { CheckersPlayer::White => "Белые", CheckersPlayer::Black => "Черные" });
+        println!("От: ({}, {}) -> К: ({}, {})", from.0, from.1, to.0, to.1);
+        println!("Тип: {}", match &move_type {
+            MoveType::Regular => "Обычный ход",
+            MoveType::Capture => "Взятие",
+            MoveType::Promotion => "Превращение в дамку",
+            MoveType::CaptureWithPromotion => "Взятие с превращением",
+        });
+        if !captured.is_empty() {
+            println!("Захвачено: {:?}", captured);
+        }
+        println!("Доска после хода:");
+        self.display_board();
+        println!("==================");
+    }
+    
+    /// Преобразует доску в строку для логгирования
+    fn board_to_string(&self) -> String {
+        let mut result = String::new();
+        for row in &self.board {
+            for cell in row {
+                match cell {
+                    Some(checker) => {
+                        if checker.is_king() {
+                            result.push(checker.player.king_symbol().chars().next().unwrap_or('K'));
+                        } else {
+                            result.push(checker.player.symbol().chars().next().unwrap_or('O'));
+                        }
+                    }
+                    None => result.push(' '),
+                }
+            }
+            result.push('\n');
+        }
+        result
+    }
+
+    /// Отображает историю ходов
+    pub fn display_move_history(&self) {
+        println!("\n=== ИСТОРИЯ ХОДОВ ===");
+        if self.move_history.is_empty() {
+            println!("История пуста - игра еще не началась");
+        } else {
+            for move_log in &self.move_history {
+                println!("Ход {}: {} от ({},{}) к ({},{}) - {}",
+                    move_log.move_number,
+                    match move_log.player { CheckersPlayer::White => "Белые", CheckersPlayer::Black => "Черные" },
+                    move_log.from.0, move_log.from.1,
+                    move_log.to.0, move_log.to.1,
+                    match move_log.move_type {
+                        MoveType::Regular => "Обычный ход",
+                        MoveType::Capture => "Взятие",
+                        MoveType::Promotion => "Превращение в дамку",
+                        MoveType::CaptureWithPromotion => "Взятие с превращением",
+                    }
+                );
+                if !move_log.captured.is_empty() {
+                    println!("  Захвачено: {:?}", move_log.captured);
+                }
+            }
+        }
+        println!("=====================\n");
+    }
+    
+    /// Отображает текущее состояние игры с подробной информацией
+    pub fn display_game_state(&self) {
+        println!("\n=== СОСТОЯНИЕ ИГРЫ ===");
+        println!("Текущий игрок: {}", match self.current_player {
+            CheckersPlayer::White => "Белые",
+            CheckersPlayer::Black => "Черные"
+        });
+        println!("Игра окончена: {}", if self.game_over { "Да" } else { "Нет" });
+        
+        if let Some(winner) = self.get_winner() {
+            println!("Победитель: {}", match winner {
+                CheckersPlayer::White => "Белые",
+                CheckersPlayer::Black => "Черные"
+            });
+        }
+        
+        if let Some(last_move) = &self.last_move {
+            println!("Последний ход: от ({},{}) к ({},{})", 
+                last_move.from.0, last_move.from.1,
+                last_move.to.0, last_move.to.1);
+            if !last_move.captures.is_empty() {
+                println!("Захвачено: {:?}", last_move.captures);
+            }
+        }
+        
+        // Проверяем обязательные взятия
+        if self.has_forced_captures() {
+            println!("⚠️  Есть обязательные взятия!");
+        }
+        
+        println!("=====================\n");
     }
 }
 
@@ -858,5 +1032,209 @@ mod tests {
         // Попытка взять свою шашку (некорректно)
         game.board[3][2] = Some(Checker::new(CheckersPlayer::White));
         assert!(!game.make_move(2, 1, 4, 3));
+    }
+    
+    #[test]
+    fn test_regular_checker_cannot_capture_backwards() {
+        let mut game = Checkers::new();
+        
+        // Создаем ситуацию, где белая шашка не может рубить назад
+        for row in 0..8 {
+            for col in 0..8 {
+                game.board[row][col] = None;
+            }
+        }
+        
+        // Белая шашка на позиции (5, 2)
+        game.board[5][2] = Some(Checker::new(CheckersPlayer::White));
+        // Черная шашка на позиции (4, 3) - ПЕРЕД белой
+        game.board[4][3] = Some(Checker::new(CheckersPlayer::Black));
+        // Пустая клетка на позиции (3, 4) - ЗА черной
+        
+        // Проверяем, что белая шашка НЕ может рубить назад (вперед для черных)
+        let captures = game.get_possible_captures(5, 2);
+        assert!(captures.is_empty(), "Обычная шашка не должна рубить назад");
+        
+        // Проверяем, что обычный ход вперед разрешен
+        assert!(game.make_move(5, 2, 4, 1));
+    }
+    
+    #[test]
+    fn test_king_can_capture_to_any_position_on_diagonal() {
+        let mut game = Checkers::new();
+        
+        // Создаем ситуацию для дамки
+        for row in 0..8 {
+            for col in 0..8 {
+                game.board[row][col] = None;
+            }
+        }
+        
+        // Белая дамка на позиции (3, 2)
+        let mut white_king = Checker::new(CheckersPlayer::White);
+        white_king.promote_to_king();
+        game.board[3][2] = Some(white_king);
+        
+        // Черная шашка на позиции (4, 3)
+        game.board[4][3] = Some(Checker::new(CheckersPlayer::Black));
+        // Пустые клетки на позициях (5, 4), (6, 5), (7, 6)
+        
+        // Проверяем, что дамка может приземлиться на любую из этих позиций
+        let captures = game.get_possible_captures(3, 2);
+        assert_eq!(captures.len(), 3, "Дамка должна иметь 3 варианта приземления");
+        
+        // Проверяем, что можно приземлиться на самую дальнюю позицию
+        assert!(game.make_move(3, 2, 7, 6));
+        
+        // Проверяем, что черная шашка удалена
+        assert!(game.board[4][3].is_none());
+        
+        // Проверяем, что белая дамка перемещена
+        assert!(game.board[7][6].is_some());
+        assert!(game.board[7][6].unwrap().is_king());
+    }
+    
+    #[test]
+    fn test_king_cannot_capture_over_obstacles() {
+        let mut game = Checkers::new();
+        
+        // Создаем ситуацию для дамки с препятствием
+        for row in 0..8 {
+            for col in 0..8 {
+                game.board[row][col] = None;
+            }
+        }
+        
+        // Белая дамка на позиции (2, 1)
+        let mut white_king = Checker::new(CheckersPlayer::White);
+        white_king.promote_to_king();
+        game.board[2][1] = Some(white_king);
+        
+        // Черная шашка на позиции (3, 2)
+        game.board[3][2] = Some(Checker::new(CheckersPlayer::Black));
+        // Препятствие на позиции (5, 4) - блокирует дальние позиции
+        game.board[5][4] = Some(Checker::new(CheckersPlayer::White));
+        // Пустые клетки на позициях (4, 3), (6, 5) - только до препятствия
+        
+        // Проверяем, что дамка может приземлиться только до препятствия
+        let captures = game.get_possible_captures(2, 1);
+        assert_eq!(captures.len(), 2, "Дамка должна иметь 2 варианта приземления (до препятствия)");
+        
+        // Проверяем, что можно приземлиться на позицию (4, 3)
+        assert!(game.make_move(2, 1, 4, 3));
+    }
+
+    #[test]
+    fn test_move_logging() {
+        let mut game = Checkers::new();
+        
+        // Делаем несколько ходов для проверки логгирования
+        println!("Начинаем тест логгирования...");
+        
+        // Первый ход: белые
+        assert!(game.make_move(5, 0, 4, 1));
+        assert_eq!(game.move_history.len(), 1);
+        
+        // Проверяем первый ход в истории
+        let first_move = &game.move_history[0];
+        assert_eq!(first_move.move_number, 1);
+        assert_eq!(first_move.player, CheckersPlayer::White);
+        assert_eq!(first_move.from, (5, 0));
+        assert_eq!(first_move.to, (4, 1));
+        assert!(matches!(first_move.move_type, MoveType::Regular));
+        assert!(first_move.captured.is_empty());
+        
+        // Второй ход: черные
+        assert!(game.make_move(2, 1, 3, 2));
+        assert_eq!(game.move_history.len(), 2);
+        
+        // Проверяем второй ход в истории
+        let second_move = &game.move_history[1];
+        assert_eq!(second_move.move_number, 2);
+        assert_eq!(second_move.player, CheckersPlayer::Black);
+        assert_eq!(second_move.from, (2, 1));
+        assert_eq!(second_move.to, (3, 2));
+        assert!(matches!(second_move.move_type, MoveType::Regular));
+        assert!(second_move.captured.is_empty());
+        
+        // Проверяем отображение истории
+        game.display_move_history();
+        game.display_game_state();
+        
+        println!("Тест логгирования завершен успешно!");
+    }
+
+    #[test]
+    fn test_black_king_simple_moves() {
+        let mut game = Checkers::new();
+        
+        // Убираем все шашки
+        for row in 0..8 {
+            for col in 0..8 {
+                game.board[row][col] = None;
+            }
+        }
+        
+        // Создаем черную дамку в позиции (3, 0) - первый столбец
+        let mut black_king = Checker::new(CheckersPlayer::Black);
+        black_king.promote_to_king();
+        game.board[3][0] = Some(black_king);
+        
+        // Устанавливаем текущего игрока как черные
+        game.current_player = CheckersPlayer::Black;
+        
+        // Получаем все возможные ходы
+        let possible_moves = game.get_possible_moves(3, 0);
+        
+        // Проверяем, что дамка может ходить вправо-вверх (к позиции 0, 3)
+        let up_right_move = possible_moves.iter().find(|m| m.to == (0, 3));
+        assert!(up_right_move.is_some(), "Черная дамка должна иметь возможность ходить вправо-вверх");
+        
+        // Проверяем, что дамка может ходить вправо-вниз (к позиции 6, 3)
+        let down_right_move = possible_moves.iter().find(|m| m.to == (6, 3));
+        assert!(down_right_move.is_some(), "Черная дамка должна иметь возможность ходить вправо-вниз");
+        
+        // Проверяем, что дамка НЕ может ходить влево (это выходит за пределы доски)
+        let left_moves = possible_moves.iter().filter(|m| m.to.1 < 0).count();
+        assert_eq!(left_moves, 0, "Черная дамка не должна иметь возможность ходить влево из первого столбца");
+        
+        println!("Тест простых ходов черной дамки завершен успешно!");
+    }
+
+    #[test]
+    fn test_black_king_first_column_moves() {
+        let mut game = Checkers::new();
+        
+        // Убираем все шашки
+        for row in 0..8 {
+            for col in 0..8 {
+                game.board[row][col] = None;
+            }
+        }
+        
+        // Создаем черную дамку в позиции (3, 0) - первый столбец
+        let mut black_king = Checker::new(CheckersPlayer::Black);
+        black_king.promote_to_king();
+        game.board[3][0] = Some(black_king);
+        
+        // Устанавливаем текущего игрока как черные
+        game.current_player = CheckersPlayer::Black;
+        
+        // Получаем все возможные ходы
+        let possible_moves = game.get_possible_moves(3, 0);
+        
+        // Проверяем, что у дамки есть ходы (не пустой список)
+        assert!(!possible_moves.is_empty(), "Черная дамка в первом столбце должна иметь возможность ходить");
+        
+        // Проверяем, что все ходы ведут вправо (col > 0)
+        for movement in &possible_moves {
+            assert!(movement.to.1 > 0, "Все ходы должны вести вправо из первого столбца");
+        }
+        
+        println!("Тест ходов черной дамки в первом столбце завершен успешно!");
+        println!("Найдено ходов: {}", possible_moves.len());
+        for movement in &possible_moves {
+            println!("  От ({},{}) к ({},{})", movement.from.0, movement.from.1, movement.to.0, movement.to.1);
+        }
     }
 }
