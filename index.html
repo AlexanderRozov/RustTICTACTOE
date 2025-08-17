@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Крестики-нолики</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        #game-canvas {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            margin: 20px auto;
+            display: block;
+        }
+        
+        .instructions {
+            color: white;
+            margin-top: 20px;
+            font-size: 1.1em;
+            line-height: 1.6;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .loading {
+            color: white;
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+        
+        .error {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Крестики-нолики</h1>
+        
+        <canvas id="game-canvas" width="400" height="500"></canvas>
+        
+        <div class="instructions">
+            <p><strong>Как играть:</strong></p>
+            <p>• Кликайте по клеткам, чтобы поставить X или O</p>
+            <p>• Первый игрок всегда X, второй - O</p>
+            <p>• Соберите 3 в ряд по горизонтали, вертикали или диагонали</p>
+            <p>• Нажмите "Новая игра" для перезапуска</p>
+        </div>
+        
+        <div id="loading" class="loading">Загрузка игры...</div>
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script type="module">
+        import init, { TicTacToeWeb } from './pkg/rust_tic_tac_toe.js';
+
+        async function startGame() {
+            try {
+                const loading = document.getElementById('loading');
+                const error = document.getElementById('error');
+                
+                // Инициализируем WASM
+                await init();
+                loading.textContent = 'Игра загружена!';
+                
+                // Создаем и запускаем игру
+                const game = new TicTacToeWeb();
+                await game.start();
+                
+                // Скрываем сообщения
+                loading.style.display = 'none';
+                error.style.display = 'none';
+                
+            } catch (err) {
+                console.error('Ошибка запуска игры:', err);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = 
+                    `Ошибка загрузки игры: ${err.message}. Убедитесь, что файлы WASM загружены корректно.`;
+            }
+        }
+
+        // Запускаем игру после загрузки страницы
+        window.addEventListener('load', startGame);
+    </script>
+</body>
+</html>
