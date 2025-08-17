@@ -20,3 +20,23 @@ egui = "0.26.2"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 web-sys = { version = "0.3", features = ["console"] }
+
+# === ОПТИМИЗАЦИИ ДЛЯ РЕЛИЗНОЙ СБОРКИ ===
+
+[profile.release]
+opt-level = 3              # Максимальная оптимизация
+lto = true                 # Link Time Optimization
+codegen-units = 1          # Одна единица компиляции для лучшей оптимизации
+panic = 'abort'            # Быстрое завершение при панике
+strip = false              # Сохраняем символы для Windows (.pdb)
+
+[profile.release.package.eframe]
+opt-level = 3
+
+[profile.release.package.egui]
+opt-level = 3
+
+# === ОПТИМИЗАЦИИ ДЛЯ WASM ===
+
+[profile.release.package."*"]
+opt-level = 3
