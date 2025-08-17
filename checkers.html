@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Шашки - Rust + WebAssembly</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        #checkers-canvas {
+            border: 3px solid #333;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin: 20px auto;
+            display: block;
+            background: #f0d9b5;
+        }
+        
+        .controls {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 5px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .feature {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .feature h3 {
+            margin-top: 0;
+            color: #ffd93d;
+        }
+        
+        .loading {
+            font-size: 1.2em;
+            margin: 20px 0;
+            color: #ffd93d;
+        }
+        
+        .error {
+            color: #ff6b6b;
+            background: rgba(255,107,107,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid rgba(255,107,107,0.3);
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding: 20px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 600px) {
+            h1 { font-size: 2em; }
+            .subtitle { font-size: 1em; }
+            .features { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Шашки</h1>
+        <p class="subtitle">Классическая игра на Rust + WebAssembly</p>
+        
+        <div class="loading" id="loading">Загрузка игры...</div>
+        <div class="error" id="error" style="display: none;"></div>
+        
+        <canvas id="checkers-canvas" width="480" height="480"></canvas>
+        
+        <div class="controls">
+            <button class="btn" onclick="location.reload()">🔄 Новая игра</button>
+            <button class="btn" onclick="window.open('index.html', '_blank')">🎯 Крестики-нолики</button>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <h3>🚀 Производительность</h3>
+                <p>Нативная скорость Rust в браузере</p>
+            </div>
+            <div class="feature">
+                <h3>🎨 Дизайн</h3>
+                <p>Современный и красивый интерфейс</p>
+            </div>
+            <div class="feature">
+                <h3>📱 Совместимость</h3>
+                <p>Работает на всех устройствах</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Создано с ❤️ на Rust + WebAssembly</p>
+            <p><a href="https://github.com/AlexanderRozov/RustTICTACTOE" style="color: #ffd93d;">Скачать исходный код</a></p>
+        </div>
+    </div>
+
+    <script type="module">
+        import init, { CheckersWeb } from './pkg/rust_tic_tac_toe.js';
+        
+        async function run() {
+            try {
+                await init();
+                
+                const loading = document.getElementById('loading');
+                loading.textContent = 'Инициализация игры...';
+                
+                const checkers = new CheckersWeb();
+                await checkers.start();
+                
+                loading.style.display = 'none';
+                
+            } catch (e) {
+                const loading = document.getElementById('loading');
+                const error = document.getElementById('error');
+                
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = `Ошибка загрузки игры: ${e}`;
+                
+                console.error('Ошибка:', e);
+            }
+        }
+        
+        run();
+    </script>
+</body>
+</html>
+

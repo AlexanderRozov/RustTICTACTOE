@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe - Rust + WebAssembly | itch.io</title>
+    
+    <!-- Meta tags for itch.io -->
+    <meta name="description" content="Classic Tic-Tac-Toe game on Rust + WebAssembly. Fast, modern and beautiful!">
+    <meta name="keywords" content="tic-tac-toe, крестики-нолики, rust, wasm, webassembly, game, logic game">
+    <meta name="author" content="Rust Developer">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://your-username.itch.io/rust-tic-tac-toe">
+    <meta property="og:title" content="Tic-Tac-Toe - Rust + WebAssembly">
+    <meta property="og:description" content="Classic Tic-Tac-Toe game on Rust + WebAssembly. Fast, modern and beautiful!">
+    <meta property="og:image" content="https://your-username.itch.io/rust-tic-tac-toe/thumbnail.png">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://your-username.itch.io/rust-tic-tac-toe">
+    <meta property="twitter:title" content="Tic-Tac-Toe - Rust + WebAssembly">
+    <meta property="twitter:description" content="Classic Tic-Tac-Toe game on Rust + WebAssembly. Fast, modern and beautiful!">
+    <meta property="og:image" content="https://your-username.itch.io/rust-tic-tac-toe/thumbnail.png">
+    
+    <!-- itch.io specific -->
+    <meta name="itch:game" content="rust-tic-tac-toe">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .itchio-header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px 0;
+            text-align: center;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .itchio-header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .itchio-header .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .game-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: calc(100vh - 200px);
+            padding: 20px;
+        }
+        
+        .game-wrapper {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        
+        #game-canvas {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            margin: 20px auto;
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .loading {
+            color: white;
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+        
+        .error {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+        
+        .itchio-footer {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            text-align: center;
+            border-top: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .itchio-footer .features {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .feature {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            min-width: 200px;
+        }
+        
+        .feature h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+        
+        .itchio-footer .download-btn {
+            display: inline-block;
+            background: #ff6b6b;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: bold;
+            margin: 20px 10px;
+            transition: all 0.3s;
+        }
+        
+        .itchio-footer .download-btn:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+        }
+        
+        @media (max-width: 768px) {
+            .itchio-header h1 {
+                font-size: 2em;
+            }
+            
+            .itchio-footer .features {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .feature {
+                min-width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="itchio-header">
+        <h1>🎮 Tic-Tac-Toe</h1>
+        <div class="subtitle">Rust + WebAssembly • Fast • Modern</div>
+    </div>
+    
+    <div class="game-container">
+        <div class="game-wrapper">
+            <canvas id="game-canvas" width="400" height="500"></canvas>
+            
+            <div id="loading" class="loading">Загрузка игры...</div>
+            <div id="error" class="error" style="display: none;"></div>
+        </div>
+    </div>
+    
+    <div class="itchio-footer">
+        <div class="features">
+            <div class="feature">
+                <h3>🚀 Performance</h3>
+                <p>Native Rust speed in browser</p>
+            </div>
+            <div class="feature">
+                <h3>🎨 Design</h3>
+                <p>Modern and beautiful interface</p>
+            </div>
+            <div class="feature">
+                <h3>📱 Compatibility</h3>
+                <p>Works on all devices</p>
+            </div>
+        </div>
+        
+        <div>
+            <a href="#" class="download-btn" onclick="downloadSource()">📥 Download source code</a>
+            <a href="#" class="download-btn" onclick="playAgain()">🔄 Play again</a>
+        </div>
+        
+        <p style="margin-top: 20px; opacity: 0.8;">
+            Created with ❤️ using Rust + WebAssembly
+        </p>
+    </div>
+
+    <script type="module">
+        import init, { TicTacToeWeb } from './pkg/rust_tic_tac_toe.js';
+
+        let gameInstance = null;
+
+        async function startGame() {
+            try {
+                const loading = document.getElementById('loading');
+                const error = document.getElementById('error');
+                
+                // Инициализируем WASM
+                await init();
+                loading.textContent = 'Игра загружена!';
+                
+                // Создаем и запускаем игру
+                gameInstance = new TicTacToeWeb();
+                await gameInstance.start();
+                
+                // Скрываем сообщения
+                loading.style.display = 'none';
+                error.style.display = 'none';
+                
+            } catch (err) {
+                console.error('Ошибка запуска игры:', err);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = 
+                    `Ошибка загрузки игры: ${err.message}`;
+            }
+        }
+
+        // Функции для itch.io
+        window.downloadSource = function() {
+            // Здесь можно добавить ссылку на GitHub или архив с исходным кодом
+            alert('Исходный код доступен на GitHub: [ссылка на ваш репозиторий]');
+        };
+
+        window.playAgain = function() {
+            if (gameInstance) {
+                // Перезапускаем игру
+                location.reload();
+            }
+        };
+
+        // Запускаем игру после загрузки страницы
+        window.addEventListener('load', startGame);
+        
+        // Обработка ошибок для itch.io
+        window.addEventListener('error', function(e) {
+            console.error('Глобальная ошибка:', e.error);
+        });
+        
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Необработанное отклонение промиса:', e.reason);
+        });
+    </script>
+</body>
+</html>

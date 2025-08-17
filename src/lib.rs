@@ -1,4 +1,8 @@
-//! # Крестики-нолики - Игровая логика
+//! # Игры - Игровая логика
+//! 
+//! Этот модуль содержит основную логику игр:
+//! - Крестики-нолики
+//! - Шашки
 //! 
 //! Этот модуль содержит основную логику игры "Крестики-нолики".
 //! Включает в себя структуры данных, игровую механику и тесты.
@@ -65,6 +69,13 @@ impl Localization {
                 "language_switch" => "Язык",
                 "russian" => "Русский",
                 "english" => "English",
+                "checkers_title" => "Шашки",
+                "tic_tac_toe_title" => "Крестики-нолики",
+                "game_select" => "Выберите игру",
+                "white_turn" => "Ход белых",
+                "black_turn" => "Ход черных",
+                "white_wins" => "Белые победили!",
+                "black_wins" => "Черные победили!",
                 _ => "Unknown",
             },
             Language::English => match key {
@@ -89,6 +100,13 @@ impl Localization {
                 "language_switch" => "Language",
                 "russian" => "Русский",
                 "english" => "English",
+                "checkers_title" => "Checkers",
+                "tic_tac_toe_title" => "Tic-Tac-Toe",
+                "game_select" => "Select Game",
+                "white_turn" => "White's turn",
+                "black_turn" => "Black's turn",
+                "white_wins" => "White wins!",
+                "black_wins" => "Black wins!",
                 _ => "Unknown",
             },
         }
@@ -327,10 +345,16 @@ impl TicTacToe {
     }
 }
 
+// === ШАШКИ ===
+
+pub mod checkers;
+
 // === ВЕБ-ВЕРСИЯ ===
 
 #[cfg(target_arch = "wasm32")]
 pub mod web;
+#[cfg(target_arch = "wasm32")]
+pub mod checkers_web;
 
 // === ТЕСТЫ ===
 
