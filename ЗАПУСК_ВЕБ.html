@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Запуск веб-версии - Крестики-нолики</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        .step {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 15px;
+            border-left: 5px solid #ffd700;
+        }
+        .command {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 16px;
+            margin: 10px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .warning {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid rgba(255, 107, 107, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .success {
+            background: rgba(80, 250, 123, 0.2);
+            border: 1px solid rgba(80, 250, 123, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            background: #ffd700;
+            color: #333;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: bold;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+        .button:hover {
+            background: #ffed4e;
+            transform: translateY(-2px);
+        }
+        .center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Запуск веб-версии "Крестики-нолики"</h1>
+        
+        <div class="warning">
+            <strong>⚠️ Важно!</strong> Игра не будет работать при открытии файла напрямую в браузере (file:///). 
+            Необходимо использовать локальный веб-сервер.
+        </div>
+
+        <div class="step">
+            <h3>🚀 Способ 1: Автоматический запуск (рекомендуется)</h3>
+            <p>Используйте готовые скрипты:</p>
+            <div class="center">
+                <a href="#" onclick="runBatch()" class="button">Запустить start_web.bat</a>
+                <a href="#" onclick="runPowerShell()" class="button">Запустить start_web.ps1</a>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>🔧 Способ 2: Ручной запуск сервера</h3>
+            <p>1. Откройте командную строку или PowerShell в папке с игрой</p>
+            <p>2. Выполните команду:</p>
+            <div class="command">python -m http.server 9001</div>
+            <p>3. Откройте браузер и перейдите по адресу:</p>
+            <div class="command">http://localhost:9001</div>
+        </div>
+
+        <div class="step">
+            <h3>📱 Способ 3: Альтернативные серверы</h3>
+            <p><strong>Node.js:</strong></p>
+            <div class="command">npx http-server -p 9001</div>
+            <p><strong>PHP:</strong></p>
+            <div class="command">php -S localhost:9001</div>
+        </div>
+
+        <div class="success">
+            <strong>✅ После успешного запуска:</strong>
+            <ul>
+                <li>Игра загрузится в браузере</li>
+                <li>Вы увидите игровое поле 3x3</li>
+                <li>Кликайте по клеткам для ходов</li>
+                <li>Используйте кнопку "Новая игра" для перезапуска</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>🛠️ Устранение проблем</h3>
+            <p><strong>Ошибка "Порт занят":</strong> Измените номер порта (например, 9001, 9002)</p>
+            <p><strong>Python не найден:</strong> Установите Python с официального сайта</p>
+            <p><strong>Игра не загружается:</strong> Проверьте консоль браузера (F12) на ошибки</p>
+        </div>
+
+        <div class="center">
+            <a href="index.html" class="button" style="background: #ff6b6b;">🎯 Открыть игру (только через сервер!)</a>
+        </div>
+    </div>
+
+    <script>
+        function runBatch() {
+            // Попытка запустить batch файл
+            try {
+                const link = document.createElement('a');
+                link.href = 'start_web.bat';
+                link.download = 'start_web.bat';
+                link.click();
+                alert('Скрипт скачан. Запустите его вручную или используйте ручной способ запуска сервера.');
+            } catch (e) {
+                alert('Используйте ручной способ: python -m http.server 9000');
+            }
+        }
+
+        function runPowerShell() {
+            alert('Для PowerShell используйте команду: python -m http.server 9000');
+        }
+    </script>
+</body>
+</html>

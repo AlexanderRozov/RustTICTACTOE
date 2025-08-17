@@ -50,6 +50,7 @@ struct TicTacToeWebApp {
     game: TicTacToe,
     cell_size: f32,
     colors: WebGameColors,
+    localization: Localization,
 }
 
 struct WebGameColors {
@@ -80,6 +81,7 @@ impl TicTacToeWebApp {
             game: TicTacToe::new(),
             cell_size: 80.0,
             colors: WebGameColors::default(),
+            localization: Localization::new(Language::English), // По умолчанию английский
         }
     }
 
@@ -196,18 +198,20 @@ impl TicTacToeWebApp {
         if self.game.is_game_over() {
             match self.game.get_winner() {
                 Some(player) => {
-                    ui.heading(egui::RichText::new(format!("Победитель: {}!", player.symbol()))
+                    let text = self.localization.get_text("winner").replace("{}", player.symbol());
+                    ui.heading(egui::RichText::new(text)
                         .color(self.colors.highlight)
                         .size(24.0));
                 }
                 None => {
-                    ui.heading(egui::RichText::new("Ничья!")
+                    ui.heading(egui::RichText::new(self.localization.get_text("draw"))
                         .color(self.colors.highlight)
                         .size(24.0));
                 }
             }
         } else {
-            ui.heading(egui::RichText::new(format!("Ход игрока: {}", self.game.current_player_symbol()))
+            let text = self.localization.get_text("current_player_turn").replace("{}", self.game.current_player_symbol());
+            ui.heading(egui::RichText::new(text)
                 .color(self.colors.text)
                 .size(20.0));
         }
@@ -216,7 +220,30 @@ impl TicTacToeWebApp {
     fn draw_controls(&mut self, ui: &mut egui::Ui) {
         ui.add_space(20.0);
         
-        if ui.button(egui::RichText::new("Новая игра")
+        // Переключатель языка
+        ui.horizontal(|ui| {
+            ui.label(egui::RichText::new(self.localization.get_text("language_switch"))
+                .color(self.colors.text)
+                .size(16.0));
+            
+            if ui.button(egui::RichText::new(self.localization.get_text("russian"))
+                .color(if self.localization.language == Language::Russian { self.colors.highlight } else { self.colors.text })
+                .size(14.0))
+                .clicked() {
+                self.localization.language = Language::Russian;
+            }
+            
+            if ui.button(egui::RichText::new(self.localization.get_text("english"))
+                .color(if self.localization.language == Language::English { self.colors.highlight } else { self.colors.text })
+                .size(14.0))
+                .clicked() {
+                self.localization.language = Language::English;
+            }
+        });
+        
+        ui.add_space(10.0);
+        
+        if ui.button(egui::RichText::new(self.localization.get_text("new_game"))
             .color(self.colors.text)
             .size(16.0))
             .clicked() {
@@ -229,7 +256,7 @@ impl eframe::App for TicTacToeWebApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.vertical_centered(|ui| {
-                ui.heading(egui::RichText::new("Крестики-нолики")
+                ui.heading(egui::RichText::new(self.localization.get_text("game_title"))
                     .color(self.colors.highlight)
                     .size(28.0));
                 
