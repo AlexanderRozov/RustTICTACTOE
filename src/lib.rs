@@ -348,6 +348,7 @@ impl TicTacToe {
 // === ШАШКИ ===
 
 pub mod checkers;
+pub mod network;
 #[cfg(test)]
 pub mod checkers_tests;
 

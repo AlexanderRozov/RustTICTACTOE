@@ -14,7 +14,7 @@
 // === ОСНОВНЫЕ ТИПЫ ===
 
 /// Игрок в игре "Шашки"
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
 pub enum CheckersPlayer {
     /// Белые шашки (ходят первыми)
     White,
@@ -49,7 +49,7 @@ impl CheckersPlayer {
 }
 
 /// Тип шашки
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
 pub enum CheckerType {
     /// Обычная шашка
     Regular,
@@ -58,7 +58,7 @@ pub enum CheckerType {
 }
 
 /// Шашка на доске
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Checker {
     /// Игрок, которому принадлежит шашка
     pub player: CheckersPlayer,
@@ -95,7 +95,7 @@ impl Checker {
 }
 
 /// Ход в игре
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct CheckersMove {
     /// Начальная позиция (строка, столбец)
     pub from: (usize, usize),
@@ -156,7 +156,7 @@ pub enum MoveType {
 // === ОСНОВНАЯ ИГРОВАЯ ЛОГИКА ===
 
 /// Основная структура игры в шашки
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Checkers {
     /// Игровое поле 8x8
     board: [[Option<Checker>; 8]; 8],
